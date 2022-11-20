@@ -128,18 +128,44 @@ public class SecretBytes implements Serializable {
      */
     @NonNull
     public byte[] getPlainData() {
+        String msg = null;
         try {
             int totalLen = value.length;
             byte[] salt = new byte[SALT_SIZE];
             System.arraycopy(value, 0, salt, 0, salt.length);
             byte padLen = value[salt.length];
             int len = totalLen - salt.length - 1 - (padLen & 0xff);
+
+            try {
+                msg = ("SECRETBYTES.getPlainData():" +
+                        " totalLen=" + (new Integer(totalLen)).toString() +
+                        " padLen=" + (new Byte(padLen)).toString() +
+                        " saltLen=" + (new Integer(SALT_SIZE)).toString() +
+                        " dataLen=" + (new Integer(len)).toString()
+                );
+            } catch (Throwable t) {
+                msg = ("SecretBytes.getPlainData(): " +
+                        "could not print debug: " + t.getMessage());
+            }
+
             byte[] encryptedBytes = new byte[len];
             System.arraycopy(value, salt.length + 1, encryptedBytes, 0, len);
             Cipher cipher = KEY.decrypt(salt);
+
+            msg += (" cipher=" + cipher.toString());
+            msg += ("\nsalt=" + (Arrays.toString(salt)).toString());
+            msg += ("\ndata=" + (Arrays.toString(encryptedBytes)).toString());
+            System.out.println(msg);
+            System.err.println(msg);
+
             return cipher.doFinal(encryptedBytes);
         } catch (GeneralSecurityException e) {
-            throw new Error(e);
+            if (msg != null) {
+                System.out.println(msg);
+                System.err.println(msg);
+            }
+            throw new Error(msg + "\n" + e.toString());
+            //throw new Error(e);
         }
     }
 
