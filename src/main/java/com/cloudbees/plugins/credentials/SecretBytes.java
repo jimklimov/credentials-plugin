@@ -120,6 +120,32 @@ public class SecretBytes implements Serializable {
         }
     }
 
+    private String printBytes(byte[] bytes) {
+        int bc = 0;
+        String bs = "";
+        boolean plaintext = true;
+        String s = "";
+        String p = "";
+
+        for (byte b : bytes) {
+            if (!(b == 0x0A || b == 0x0D || (b >= 0x20 && b <= 0x7F)))
+                plaintext = false;
+            if (bc % 16 == 0) {
+                if (p != "") { s += "\t" + p; p = ""; }
+                s += String.format("\n[%08d] ", bc);
+            }
+            bc ++;
+            s += String.format(" %02X", b);
+            p += String.format("%c", ( (b == 0x0A || b == 0x0D) ? 0x20 : (b & 0x000000FF)));
+            bs += String.format("%c", b & 0x000000FF);
+        }
+        if (plaintext) {
+            return ("PLAINTEXT (${bytes.size()} chars):\n" + bs);
+        } else {
+            return ("BINARY (${bytes.size()} bytes):" + s);
+        }
+    }
+
     /**
      * Returns the raw unencrypted data. The caller is responsible for zeroing out the returned {@code byte[]} after
      * use.
@@ -153,8 +179,8 @@ public class SecretBytes implements Serializable {
             Cipher cipher = KEY.decrypt(salt);
 
             msg += (" cipher=" + cipher.toString());
-            msg += ("\nsalt=" + (Arrays.toString(salt)).toString());
-            msg += ("\ndata=" + (Arrays.toString(encryptedBytes)).toString());
+            msg += ("\nsalt=" + (printBytes(salt)).toString());
+            msg += ("\ndata=" + (printBytes(encryptedBytes)).toString());
             System.out.println(msg);
             System.err.println(msg);
 
