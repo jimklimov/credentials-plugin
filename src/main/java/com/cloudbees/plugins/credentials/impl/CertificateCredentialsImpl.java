@@ -435,13 +435,6 @@ public class CertificateCredentialsImpl extends BaseStandardCredentials implemen
         private static final long serialVersionUID = 1L;
 
         /**
-         * For the subsequent snapshot taking operation, allow use of uploadedKeystoreBytes
-         * directly (only usable in same JVM)? The alternative is to serialize into a Secret
-         * and back (see {@link CertificateCredentialsSnapshotTaker}.
-         */
-        private boolean snapshotSecretBytes = true;
-
-        /**
          * The old uploaded keystore.
          * Still used for snapshot taking, with contents independent of Jenkins instance and JVM.
          */
@@ -576,7 +569,11 @@ public class CertificateCredentialsImpl extends BaseStandardCredentials implemen
          */
         @Override
         public boolean isSnapshotSource() {
-            return this.snapshotSecretBytes;
+            //return this.snapshotSecretBytes;
+            // If context is local, clone SecretBytes directly (only
+            // usable in same JVM). Otherwise use Secret for transport
+            // (see {@link CertificateCredentialsSnapshotTaker}.
+            return (/* XStream */ Channel.current() == null);
         }
 
         /**
