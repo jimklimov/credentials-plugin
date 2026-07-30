@@ -1658,10 +1658,25 @@ public abstract class CredentialsProvider extends Descriptor<CredentialsProvider
     /**
      * As {@link #getCredentialsInItem(Class, Item, Authentication, List)}, additionally identifying the specific
      * {@link Run} in whose context the lookup is being performed, if known - see
-     * {@link #getCredentialsInItemGroup(Class, ItemGroup, Authentication, List, Run)} for why this matters. The
-     * default implementation ignores {@code run} unless {@code item} resolves to an {@link ItemGroup} (in which
-     * case it is threaded through to {@link #getCredentialsInItemGroup(Class, ItemGroup, Authentication, List, Run)}),
-     * so this is fully backward compatible.
+     * {@link #getCredentialsInItemGroup(Class, ItemGroup, Authentication, List, Run)} for why this matters.
+     *
+     * <p>Unlike the {@link ItemGroup} overload, this default implementation cannot simply delegate to the plain
+     * {@link #getCredentialsInItem(Class, Item, Authentication, List)} overload and rely on virtual dispatch alone:
+     * that overload is itself a legitimate, commonly-overridden extension point (for example
+     * {@code SystemCredentialsProvider.ProviderImpl} overrides it to unconditionally exclude
+     * {@link CredentialsScope#SYSTEM}-scoped credentials, a check that only applies at the {@link Item} level, not
+     * at the {@link ItemGroup} level where the root {@link Jenkins} instance is itself a valid, SYSTEM-scope-visible
+     * {@link ItemGroup}). If this method threaded {@code run} straight through to
+     * {@link #getCredentialsInItemGroup(Class, ItemGroup, Authentication, List, Run)} regardless, it would bypass
+     * any such override entirely - for a job directly under {@link Jenkins#get()}, {@code item.getParent()} is
+     * {@link Jenkins#get()}, so the {@link ItemGroup} overload would (correctly, for that overload's own contract)
+     * treat the lookup as a root-level, SYSTEM-scope-visible one, silently exposing SYSTEM-scoped credentials to
+     * item-level (i.e. build-level) callers that the {@link Item} overload was specifically written to hide them
+     * from. So: if a provider overrides the plain {@link Item} overload (or either older deprecated equivalent),
+     * that override - which knows nothing about {@code run} - is used as-is (run is not threaded through, exactly
+     * as if this new overload did not exist); only providers that have <em>not</em> customized the {@link Item}
+     * overload at all fall through to the {@link ItemGroup}-based, {@code run}-aware resolution below. This is
+     * fully backward compatible either way.</p>
      *
      * @param type               the type of credentials to return.
      * @param item               the item.
@@ -1674,11 +1689,19 @@ public abstract class CredentialsProvider extends Descriptor<CredentialsProvider
      * @since TODO
      */
     @NonNull
+    @SuppressWarnings("deprecation")
     public <C extends Credentials> List<C> getCredentialsInItem(@NonNull Class<C> type,
                                                                 @NonNull Item item,
                                                                 @Nullable Authentication authentication,
                                                                 @NonNull List<DomainRequirement> domainRequirements,
                                                                 @CheckForNull Run<?, ?> run) {
+        // NOTE: if we are here, the descendent class did not override this method
+        //  (assume it does not call super class method for implementation)
+        if (Util.isOverridden(CredentialsProvider.class, getClass(), "getCredentialsInItem", Class.class, Item.class, Authentication.class, List.class)
+                || Util.isOverridden(CredentialsProvider.class, getClass(), "getCredentials", Class.class, Item.class, org.acegisecurity.Authentication.class, List.class)
+                || Util.isOverridden(CredentialsProvider.class, getClass(), "getCredentials", Class.class, Item.class, org.acegisecurity.Authentication.class)) {
+            return getCredentialsInItem(type, item, authentication, domainRequirements);
+        }
         return getCredentialsInItemFallback(type, item, authentication, domainRequirements, run);
     }
 
