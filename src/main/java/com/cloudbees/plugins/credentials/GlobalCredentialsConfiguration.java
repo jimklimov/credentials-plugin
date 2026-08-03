@@ -33,6 +33,7 @@ import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 import hudson.model.ManagementLink;
 import hudson.security.GlobalSecurityConfiguration;
+import hudson.security.Permission;
 import hudson.util.FormApply;
 import java.io.IOException;
 import java.util.function.Predicate;
@@ -107,6 +108,17 @@ public class GlobalCredentialsConfiguration extends ManagementLink
 
     public String getCategoryName() {
         return "SECURITY";
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Allow users with {@link Jenkins#SYSTEM_READ} to view (but not modify) this configuration screen,
+     * matching {@link GlobalSecurityConfiguration}'s read-only behavior.
+     */
+    @Override
+    public Permission getRequiredPermission() {
+        return Jenkins.SYSTEM_READ;
     }
 
 // TODO uncomment once ContextMenu is IconSpec aware
