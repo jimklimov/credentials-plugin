@@ -70,13 +70,12 @@ public class GlobalCredentialsConfiguration extends ManagementLink
      * Our filter.
      *
      * <p>Any {@link Descriptor} whose {@link Descriptor#getCategory()} is an {@code instanceof}
-     * {@link Category} (including subclasses) is rendered on this page via
-     * {@code index.jelly}, which {@code st:include}s the descriptor's full
-     * {@link Descriptor#getGlobalConfigPage()} &mdash; not just simple properties such as
-     * {@code getId()}/{@code getDisplayName()}. Since {@link #getRequiredPermission()} only
-     * requires {@link Jenkins#SYSTEM_READ}, any descriptor that opts into {@link Category} must
-     * ensure its global config page renders correctly in read-only mode (i.e. does not assume
-     * {@link Jenkins#ADMINISTER}).
+     * {@link Category} is rendered on this page via {@code index.jelly}, which
+     * {@code st:include}s the descriptor's full {@link Descriptor#getGlobalConfigPage()}
+     * &mdash; not just simple properties such as {@code getId()}/{@code getDisplayName()}. Since
+     * {@link #getRequiredPermission()} only requires {@link Jenkins#SYSTEM_READ}, any descriptor
+     * that opts into {@link Category} must ensure its global config page renders correctly in
+     * read-only mode.
      */
     @SuppressWarnings("rawtypes")
     public static final Predicate<Descriptor> FILTER = d -> d.getCategory() instanceof Category;
