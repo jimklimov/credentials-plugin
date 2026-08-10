@@ -68,6 +68,15 @@ public class GlobalCredentialsConfiguration extends ManagementLink
 
     /**
      * Our filter.
+     *
+     * <p>Any {@link Descriptor} whose {@link Descriptor#getCategory()} is an {@code instanceof}
+     * {@link Category} (including subclasses) is rendered on this page via
+     * {@code index.jelly}, which {@code st:include}s the descriptor's full
+     * {@link Descriptor#getGlobalConfigPage()} &mdash; not just simple properties such as
+     * {@code getId()}/{@code getDisplayName()}. Since {@link #getRequiredPermission()} only
+     * requires {@link Jenkins#SYSTEM_READ}, any descriptor that opts into {@link Category} must
+     * ensure its global config page renders correctly in read-only mode (i.e. does not assume
+     * {@link Jenkins#ADMINISTER}).
      */
     @SuppressWarnings("rawtypes")
     public static final Predicate<Descriptor> FILTER = d -> d.getCategory() instanceof Category;
@@ -230,6 +239,14 @@ public class GlobalCredentialsConfiguration extends ManagementLink
 
     /**
      * Security related configurations.
+     *
+     * <p><strong>Note for implementors:</strong> any {@link Descriptor} (including third-party
+     * ones) that returns this class, or a subclass of it, from {@link Descriptor#getCategory()}
+     * will have its global config page ({@link Descriptor#getGlobalConfigPage()}) rendered on
+     * {@code /configureCredentials}, which is reachable by any user with {@link Jenkins#SYSTEM_READ}
+     * &mdash; not just {@link Jenkins#ADMINISTER}. Make sure such a page does not assume the
+     * viewer holds {@link Jenkins#ADMINISTER} (e.g. avoid actions that only make sense for admins,
+     * and don't render data that non-admins should not see).
      */
     @Extension
     @Symbol("globalCredentialsConfiguration")
